@@ -44,8 +44,8 @@ const T = {
   done: { en: "Done ✓", ar: "خلصت ✓" },
   skip: { en: "Skip", ar: "تخطى" },
   restTimer: { en: "Rest Timer", ar: "وقت الراحة" },
-  restDone: { en: "Rest done! Next set 💪", ar: "انتهت الراحة! السيت القادم 💪" },
-  markDone: { en: "✓ Mark Day Complete", ar: "✓ أنهيت اليوم" },
+  restDone: { en: "Rest done! Time for next set 💪", ar: "انتهت الراحة! جاهز للسيت القادم 💪" },
+  markDone: { en: "✓ Mark Day as Complete", ar: "✓ أنهيت اليوم" },
   dayComplete: { en: "Day Complete!", ar: "أنهيت اليوم!" },
   nextDay: { en: "Next Day →", ar: "→ اليوم التالي" },
   restDay: { en: "Rest Day 😴", ar: "يوم راحة 😴" },
@@ -55,6 +55,12 @@ const T = {
 };
 
 const t = (key, lang) => T[key]?.[lang] || T[key]?.en || key;
+
+const PlayIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+    <polygon points="4,2 14,8 4,14" fill="#2a2e3c" />
+  </svg>
+);
 
 export default function ClientApp() {
   const [lang, setLang] = useState("ar");
@@ -100,7 +106,7 @@ export default function ClientApp() {
     else setLoginError(t("invalidCreds", lang));
   };
 
-  const startRestTimer = (key, seconds, nextKey) => {
+  const startRestTimer = (key, seconds) => {
     if (restTimer?.intervalId) clearInterval(restTimer.intervalId);
     let remaining = seconds;
     const intervalId = setInterval(() => {
@@ -109,7 +115,6 @@ export default function ClientApp() {
         clearInterval(intervalId);
         setRestTimer(null);
         setCompletedSets(prev => ({ ...prev, [key]: true }));
-        if (nextKey) setActiveSetKey(nextKey);
         notify(t("restDone", lang));
       } else {
         setRestTimer(prev => prev ? { ...prev, remaining } : null);
@@ -161,11 +166,13 @@ export default function ClientApp() {
     const newIdx = currentIdx + 1;
     await sb.from("clients").update({ current_day_index: newIdx }).eq("id", client.id);
     setClient(prev => ({ ...prev, current_day_index: newIdx }));
-    setLiveReps({}); setCompletedSets({}); setActiveSetKey(null);
+    setLiveReps({});
+    setCompletedSets({});
+    setActiveSetKey(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // LOGIN
+  // ── LOGIN ──
   if (!client) {
     return (
       <div style={{ ...cs.root, direction: isRTL ? "rtl" : "ltr" }}>
@@ -180,9 +187,10 @@ export default function ClientApp() {
           </div>
           <div style={cs.form}>
             <p style={cs.loginLabel}>{t("username", lang)}</p>
-            <input style={cs.input} placeholder={t("username", lang)} value={username} onChange={e => setUsername(e.target.value)} autoCapitalize="none" autoCorrect="off" />
+            <input style={cs.input} placeholder={t("username", lang)} value={username} onChange={e => setUsername(e.target.value)} />
             <p style={cs.loginLabel}>{t("password", lang)}</p>
-            <input style={cs.input} type="password" placeholder={t("password", lang)} value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => { if (e.key === "Enter") login(); }} />
+            <input style={cs.input} type="password" placeholder={t("password", lang)} value={password} onChange={e => setPassword(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") login(); }} />
             {loginError && <p style={cs.error}>{loginError}</p>}
             <button style={cs.btn} onClick={login}>{t("login", lang)}</button>
           </div>
@@ -201,40 +209,11 @@ export default function ClientApp() {
     <div style={{ ...cs.root, direction: isRTL ? "rtl" : "ltr" }}>
       {notification && <div style={cs.notification}>{notification}</div>}
 
-      {/* Video Popup */}
-      {videoPopup && (
-        <div style={cs.popupBg} onClick={() => setVideoPopup(null)}>
-          <div style={cs.popupBox} onClick={e => e.stopPropagation()}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-              <span style={{ color: "#1fe5ff", fontWeight: 700, fontSize: 14 }}>{videoPopup.name}</span>
-              <button style={cs.popupClose} onClick={() => setVideoPopup(null)}>✕ Close</button>
-            </div>
-            <div style={cs.popupPlayer}>
-              <iframe
-                src={`https://www.youtube-nocookie.com/embed/${videoPopup.id}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
-                style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none", borderRadius: 8 }}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                allowFullScreen
-                title={videoPopup.name}
-              />
-            </div>
-            <a 
-              href={`https://www.youtube.com/watch?v=${videoPopup.id}`}
-              target="_blank" 
-              rel="noreferrer"
-              style={{ display: "block", textAlign: "center", color: "#a0a0a0", fontSize: 12, marginTop: 10, textDecoration: "none" }}
-            >
-              {lang === "ar" ? "فتح في يوتيوب ↗" : "Open in YouTube ↗"}
-            </a>
-          </div>
-        </div>
-      )}
-
       {/* Header */}
       <div style={cs.header}>
         <div>
           <div style={cs.logo2}>تحرك</div>
-          <div style={{ color: "#e0e0e0", fontSize: 11 }}>{client.name}</div>
+          <div style={{ color: "#e0e0e0", fontSize: 12 }}>{client.name}</div>
         </div>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
           <button style={lang === "ar" ? cs.langActive : cs.langBtn} onClick={() => setLang("ar")}>ع</button>
@@ -242,7 +221,8 @@ export default function ClientApp() {
           <button style={cs.logoutBtn} onClick={() => {
             setClient(null); setUsername(""); setPassword(""); setLiveReps({});
             setCompletedSets({}); setActiveSetKey(null);
-            if (restTimer?.intervalId) clearInterval(restTimer.intervalId); setRestTimer(null);
+            if (restTimer?.intervalId) clearInterval(restTimer.intervalId);
+            setRestTimer(null);
           }}>{t("logout", lang)}</button>
         </div>
       </div>
@@ -268,18 +248,19 @@ export default function ClientApp() {
             <>
               {/* Progress Card */}
               <div style={cs.progressCard}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ color: "#1fe5ff", fontWeight: 800, fontSize: 14 }}>{program.name}</div>
-                    <div style={{ color: "#e0e0e0", fontSize: 11, marginTop: 2 }}>
+                    <div style={{ color: "#1fe5ff", fontWeight: 800, fontSize: 15 }}>{program.name}</div>
+                    <div style={{ color: "#e0e0e0", fontSize: 12, marginTop: 2 }}>
                       {t("week", lang)} {(currentFlatDay?.weekIndex || 0) + 1} · {currentFlatDay?.day.label} · {t("day", lang)} {currentIdx + 1} {t("of", lang)} {totalDays}
                     </div>
                   </div>
                   <div style={cs.progressRing}>
-                    <span style={{ color: "#1fe5ff", fontWeight: 900, fontSize: 12 }}>{Math.round((currentIdx / totalDays) * 100)}%</span>
+                    <span style={{ color: "#1fe5ff", fontWeight: 900, fontSize: 13 }}>{Math.round((currentIdx / totalDays) * 100)}%</span>
                   </div>
                 </div>
                 <div style={cs.progressTrack}><div style={{ ...cs.progressFill, width: `${(currentIdx / totalDays) * 100}%` }} /></div>
+                <div style={{ color: "#a0a0a0", fontSize: 11, marginTop: 5 }}>{currentIdx} {t("of", lang)} {totalDays} {t("daysCompleted", lang)}</div>
               </div>
 
               {/* Day header */}
@@ -298,7 +279,7 @@ export default function ClientApp() {
 
                 return (
                   <div key={ei} style={cs.exCard}>
-                    {/* Exercise name + number */}
+                    {/* Exercise header */}
                     <div style={cs.exHeader}>
                       <div style={cs.exIndex}>{ei + 1}</div>
                       <div style={{ flex: 1 }}>
@@ -307,38 +288,35 @@ export default function ClientApp() {
                       </div>
                     </div>
 
-                    {/* Video full width on mobile */}
-                    {thumbUrl ? (
-                      <a href={ex.video_url} target="_blank" rel="noreferrer" style={cs.thumbWrapFull}>
-                        <img src={thumbUrl} alt={ex.name} style={cs.thumbImgFull} />
-                        <div style={cs.playOverlay}>
-                          <div style={cs.playBtn}>
-                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                              <polygon points="3,1 13,7 3,13" fill="#2a2e3c"/>
-                            </svg>
-                          </div>
-                        </div>
-                      </a>
-                    ) : ex.video_url ? (
-                      <a href={ex.video_url} target="_blank" rel="noreferrer" style={cs.videoFallbackFull}>
-                        <div style={cs.playBtn}>
-                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                            <polygon points="3,1 13,7 3,13" fill="#2a2e3c"/>
-                          </svg>
-                        </div>
-                        <span style={{ fontSize: 10, color: "#e0e0e0", marginTop: 4 }}>{t("watchVideo", lang)}</span>
-                      </a>
-                    ) : null}
+                    {/* Video + stats */}
+                    <div style={cs.exMediaRow}>
+                      <div style={cs.videoCol}>
+                        {thumbUrl ? (
+                          <a href={ex.video_url} target="_blank" rel="noreferrer" style={cs.thumbWrap}>
+                            <img src={thumbUrl} alt={ex.name} style={cs.thumbImg} />
+                            <div style={cs.playOverlay}>
+                              <div style={cs.playBtn}><PlayIcon /></div>
+                            </div>
+                          </a>
+                        ) : ex.video_url ? (
+                          <a href={ex.video_url} target="_blank" rel="noreferrer" style={cs.videoFallback}>
+                            <div style={cs.playBtn}><PlayIcon /></div>
+                            <span style={{ fontSize: 10, color: "#e0e0e0", marginTop: 4 }}>{t("watchVideo", lang)}</span>
+                          </a>
+                        ) : (
+                          <div style={cs.noVideo}><span style={{ color: "#555", fontSize: 10 }}>{t("noVideo", lang)}</span></div>
+                        )}
+                      </div>
 
-                    {/* Stat boxes */}
-                    <div style={{ display: "flex", gap: 8, marginTop: 10, marginBottom: 6 }}>
-                      {exItem.sets && <div style={cs.statBox}><div style={cs.statValue}>{exItem.sets}</div><div style={cs.statLabel}>{t("sets", lang)}</div></div>}
-                      {exItem.reps && <div style={cs.statBox}><div style={cs.statValue}>{exItem.reps}</div><div style={cs.statLabel}>{t("reps", lang)}</div></div>}
-                      {exItem.rest && <div style={cs.statBox}><div style={cs.statValue}>{exItem.rest}s</div><div style={cs.statLabel}>{t("rest", lang)}</div></div>}
+                      {/* Stat boxes */}
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-start" }}>
+                        {exItem.sets && <div style={cs.statBox}><div style={cs.statValue}>{exItem.sets}</div><div style={cs.statLabel}>{t("sets", lang)}</div></div>}
+                        {exItem.reps && <div style={cs.statBox}><div style={cs.statValue}>{exItem.reps}</div><div style={cs.statLabel}>{t("reps", lang)}</div></div>}
+                        {exItem.rest && <div style={cs.statBox}><div style={cs.statValue}>{exItem.rest}s</div><div style={cs.statLabel}>{t("rest", lang)}</div></div>}
+                      </div>
                     </div>
 
-                    {/* Description + coach note */}
-                    {ex.description && <div style={{ color: "#c0c0c0", fontSize: 12, marginBottom: 6 }}>{ex.description}</div>}
+                    {ex.description && <div style={{ color: "#c0c0c0", fontSize: 12, marginTop: 8 }}>{ex.description}</div>}
                     {exItem.note && (
                       <div style={cs.coachNote}>
                         <span style={cs.coachNoteLabel}>📋 {t("coachNote", lang)}</span>
@@ -351,7 +329,7 @@ export default function ClientApp() {
 
                     {/* Sets */}
                     {exItem.sets && (
-                      <div style={{ marginTop: 10, borderTop: "1px solid #333a4d", paddingTop: 8 }}>
+                      <div style={{ marginTop: 12, borderTop: "1px solid #333a4d", paddingTop: 8 }}>
                         {Array.from({ length: parseInt(exItem.sets) || 1 }).map((_, si) => {
                           const key = `${exItem.id}-${gi}-${si}`;
                           const lastLog = exLogs.length > 0 ? exLogs[0].sets?.[si] : null;
@@ -359,47 +337,26 @@ export default function ClientApp() {
                           const saved = val !== "" && !isNaN(parseInt(val));
                           const isTimerActive = restTimer?.key === key;
                           const isCompleted = completedSets[key];
-                          const isActive = activeSetKey === key || (!activeSetKey && si === 0 && !completedSets[key]);
+                          const isActive = activeSetKey === key || (!activeSetKey && si === 0);
 
                           return (
                             <div key={si}>
                               <div style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 8,
-                                padding: isActive ? "10px 12px" : "8px 4px",
-                                marginBottom: 4,
-                                background: isActive ? "#1a2535" : isCompleted ? "#0f1f10" : "transparent",
-                                borderRadius: 10,
-                                borderLeft: isActive ? "4px solid #1fe5ff" : isCompleted ? "4px solid #4ade80" : "4px solid transparent",
-                                transition: "all 0.2s ease",
+                                ...cs.setRow,
+                                background: isActive ? "#1a2535" : "transparent",
+                                borderRadius: isActive ? 8 : 0,
+                                borderLeft: isActive ? "3px solid #1fe5ff" : "3px solid transparent",
+                                padding: isActive ? "8px 10px" : "7px 0",
+                                marginBottom: isActive ? 4 : 0,
                               }}>
-                                {/* Set label */}
-                                <div style={{ fontSize: 13, fontWeight: 800, width: 52, flexShrink: 0, color: isCompleted ? "#4ade80" : isActive ? "#1fe5ff" : "#a0a0a0" }}>
-                                  {isCompleted ? "✓ " + (si + 1) : `${t("set", lang)} ${si + 1}`}
+                                <div style={{ ...cs.setLabel, color: isCompleted ? "#4ade80" : isActive ? "#1fe5ff" : "#a0a0a0" }}>
+                                  {isCompleted ? "✓" : `${t("set", lang)} ${si + 1}`}
                                 </div>
-
-                                {/* Target reps */}
-                                {exItem.reps && <div style={{ color: "#fff", fontSize: 12, width: 36, flexShrink: 0 }}>{exItem.reps}</div>}
-
-                                {/* Last log */}
-                                {lastLog && <div style={{ color: "#a0a0a0", fontSize: 10, flex: 1 }}>{t("lastSession", lang)}: {lastLog.reps}</div>}
-
-                                {/* Input */}
-                                <div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: "auto" }}>
+                                {exItem.reps && <div style={cs.setTarget}>{exItem.reps}</div>}
+                                {lastLog && <div style={cs.setLast}>{t("lastSession", lang)}: {lastLog.reps}</div>}
+                                <div style={cs.setInputWrap}>
                                   <input
-                                    style={{
-                                      background: "#232736",
-                                      border: `2px solid ${isCompleted ? "#4ade80" : saved ? "#1fe5ff" : "#3d4560"}`,
-                                      borderRadius: 8,
-                                      color: "#fff",
-                                      fontWeight: 800,
-                                      textAlign: "center",
-                                      outline: "none",
-                                      fontSize: 18,
-                                      width: 62,
-                                      padding: "8px 4px",
-                                    }}
+                                    style={{ ...cs.setInput, borderColor: isCompleted ? "#4ade80" : saved ? "#1fe5ff" : "#3d4560" }}
                                     type="number" min="0" placeholder="—" value={val}
                                     onFocus={() => setActiveSetKey(key)}
                                     onChange={e => {
@@ -409,14 +366,12 @@ export default function ClientApp() {
                                       saveRep(exItem, gi, si, newVal, newReps);
                                     }}
                                   />
-                                  <span style={{ color: "#a0a0a0", fontSize: 10 }}>{t("reps", lang)}</span>
+                                  <span style={cs.setUnit}>{t("reps", lang)}</span>
                                 </div>
-
-                                {/* Done button — disappears when timer finishes */}
                                 {saved && !isTimerActive && !isCompleted && (
                                   <button style={cs.doneBtn} onClick={() => {
-                                    const nextKey = `${exItem.id}-${gi}-${si + 1}`;
-                                    startRestTimer(key, parseInt(exItem.rest) || 60, nextKey);
+                                    startRestTimer(key, parseInt(exItem.rest) || 60);
+                                    setActiveSetKey(`${exItem.id}-${gi}-${si + 1}`);
                                   }}>{t("done", lang)}</button>
                                 )}
                               </div>
@@ -426,13 +381,11 @@ export default function ClientApp() {
                                 <div style={cs.timerBar}>
                                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                                     <span style={{ color: "#1fe5ff", fontWeight: 700, fontSize: 13 }}>⏱ {t("restTimer", lang)}</span>
-                                    <span style={{ color: "#fff", fontWeight: 900, fontSize: 26 }}>{Math.floor(restTimer.remaining / 60)}:{String(restTimer.remaining % 60).padStart(2, "0")}</span>
+                                    <span style={{ color: "#fff", fontWeight: 900, fontSize: 22 }}>{Math.floor(restTimer.remaining / 60)}:{String(restTimer.remaining % 60).padStart(2, "0")}</span>
                                     <button style={cs.skipBtn} onClick={() => {
                                       clearInterval(restTimer.intervalId);
                                       setRestTimer(null);
                                       setCompletedSets(prev => ({ ...prev, [key]: true }));
-                                      const nextKey = `${exItem.id}-${gi}-${si + 1}`;
-                                      setActiveSetKey(nextKey);
                                     }}>{t("skip", lang)}</button>
                                   </div>
                                   <div style={cs.timerTrack}><div style={{ ...cs.timerFill, width: `${(restTimer.remaining / restTimer.total) * 100}%` }} /></div>
@@ -449,7 +402,7 @@ export default function ClientApp() {
 
               {/* Complete Day */}
               {currentFlatDay?.day.exercises?.length > 0 && (
-                <div style={{ marginTop: 16, paddingBottom: 20 }}>
+                <div style={{ marginTop: 20, paddingBottom: 20 }}>
                   {isDayComplete(currentFlatDay) || client.completed_days?.includes(currentFlatDay.globalIndex) ? (
                     <div style={cs.dayDoneCard}>
                       <span style={{ fontSize: 28 }}>🎉</span>
@@ -498,60 +451,66 @@ export default function ClientApp() {
 
 const cs = {
   root: { minHeight: "100vh", background: "#2a2e3c", fontFamily: "'Helvetica Neue', Arial, sans-serif", color: "#fff", paddingBottom: 100 },
-  loginWrap: { maxWidth: 400, margin: "0 auto", padding: "40px 20px" },
+  loginWrap: { maxWidth: 380, margin: "0 auto", padding: "50px 20px" },
   logo: { textAlign: "center", marginBottom: 28 },
-  logoAr: { display: "block", fontSize: 52, fontWeight: 900, color: "#1fe5ff", letterSpacing: 2, lineHeight: 1 },
+  logoAr: { display: "block", fontSize: 48, fontWeight: 900, color: "#1fe5ff", letterSpacing: 2, lineHeight: 1 },
   logoEn: { display: "block", fontSize: 11, letterSpacing: 6, color: "#a0a0a0", marginTop: 4 },
   logo2: { fontSize: 20, fontWeight: 900, color: "#1fe5ff" },
   form: { display: "flex", flexDirection: "column", gap: 6 },
-  input: { background: "#232736", border: "1px solid #3d4560", borderRadius: 12, color: "#fff", padding: "16px", fontSize: 16, width: "100%", boxSizing: "border-box", marginBottom: 4, outline: "none" },
-  btn: { background: "#1fe5ff", color: "#2a2e3c", border: "none", borderRadius: 14, padding: "18px 20px", fontWeight: 900, cursor: "pointer", fontSize: 18, width: "100%", marginTop: 12 },
+  input: { background: "#232736", border: "1px solid #3d4560", borderRadius: 10, color: "#fff", padding: "14px 16px", fontSize: 16, width: "100%", boxSizing: "border-box", marginBottom: 4, outline: "none" },
+  btn: { background: "#1fe5ff", color: "#2a2e3c", border: "none", borderRadius: 12, padding: "16px 20px", fontWeight: 900, cursor: "pointer", fontSize: 17, width: "100%", marginTop: 10 },
   loginLabel: { color: "#e0e0e0", fontSize: 14, margin: "8px 0 4px" },
   error: { color: "#ef4444", fontSize: 13, margin: 0 },
-  header: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", borderBottom: "1px solid #333a4d", background: "#232736", position: "sticky", top: 0, zIndex: 50 },
+  header: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderBottom: "1px solid #333a4d", background: "#232736", position: "sticky", top: 0, zIndex: 50 },
   logoutBtn: { background: "#333a4d", color: "#e0e0e0", border: "none", borderRadius: 6, padding: "6px 12px", cursor: "pointer", fontSize: 12 },
-  tabRow: { display: "flex", borderBottom: "1px solid #333a4d", background: "#232736", position: "sticky", top: 50, zIndex: 49 },
-  tabActive: { flex: 1, background: "#1fe5ff", color: "#2a2e3c", border: "none", padding: "14px", fontWeight: 800, cursor: "pointer", fontSize: 15 },
-  tabInactive: { flex: 1, background: "transparent", color: "#a0a0a0", border: "none", padding: "14px", fontWeight: 600, cursor: "pointer", fontSize: 15 },
-  content: { maxWidth: 560, margin: "0 auto", padding: "12px 12px" },
+  tabRow: { display: "flex", borderBottom: "1px solid #333a4d", background: "#232736", position: "sticky", top: 53, zIndex: 49 },
+  tabActive: { flex: 1, background: "#1fe5ff", color: "#2a2e3c", border: "none", padding: "13px", fontWeight: 800, cursor: "pointer", fontSize: 14 },
+  tabInactive: { flex: 1, background: "transparent", color: "#a0a0a0", border: "none", padding: "13px", fontWeight: 600, cursor: "pointer", fontSize: 14 },
+  content: { maxWidth: 560, margin: "0 auto", padding: "14px 12px" },
   sectionTitle: { color: "#fff", fontSize: 18, fontWeight: 800, marginBottom: 14, marginTop: 0 },
   empty: { color: "#a0a0a0", textAlign: "center", padding: "50px 20px", fontSize: 15, lineHeight: 2 },
   notification: { position: "fixed", top: 16, left: "50%", transform: "translateX(-50%)", background: "#1fe5ff", color: "#2a2e3c", borderRadius: 10, padding: "10px 20px", fontWeight: 800, fontSize: 14, zIndex: 999, whiteSpace: "nowrap", boxShadow: "0 4px 20px rgba(0,0,0,0.4)" },
   langBtn: { background: "#333a4d", color: "#a0a0a0", border: "1px solid #3d4560", borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontSize: 12, fontWeight: 600 },
   langActive: { background: "#1fe5ff", color: "#2a2e3c", border: "1px solid #1fe5ff", borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontSize: 12, fontWeight: 800 },
-  progressCard: { background: "#232736", border: "1px solid #3d4560", borderRadius: 14, padding: 12, marginBottom: 12 },
-  progressRing: { width: 44, height: 44, borderRadius: "50%", border: "3px solid #1fe5ff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  progressCard: { background: "#232736", border: "1px solid #3d4560", borderRadius: 14, padding: 14, marginBottom: 14 },
+  progressRing: { width: 46, height: 46, borderRadius: "50%", border: "3px solid #1fe5ff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
   progressTrack: { background: "#333a4d", borderRadius: 99, height: 7, overflow: "hidden" },
   progressFill: { background: "#1fe5ff", height: "100%", borderRadius: 99, transition: "width 0.4s ease" },
   dayHeader: { fontSize: 11, fontWeight: 800, color: "#1fe5ff", textTransform: "uppercase", letterSpacing: 2, padding: "6px 0 10px", borderBottom: "2px solid #1fe5ff", marginBottom: 12 },
   card: { background: "#232736", border: "1px solid #363d52", borderRadius: 12, padding: 14, marginBottom: 10 },
-  exCard: { background: "#232736", border: "1px solid #363d52", borderRadius: 16, padding: 14, marginBottom: 14 },
+  exCard: { background: "#232736", border: "1px solid #363d52", borderRadius: 14, padding: 14, marginBottom: 12 },
   exHeader: { display: "flex", alignItems: "center", gap: 10, marginBottom: 10 },
-  exIndex: { width: 30, height: 30, minWidth: 30, background: "#1fe5ff", color: "#2a2e3c", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: 13 },
+  exIndex: { width: 28, height: 28, minWidth: 28, background: "#1fe5ff", color: "#2a2e3c", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: 13 },
+  exMediaRow: { display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 4 },
+  videoCol: { flexShrink: 0 },
+  thumbWrap: { position: "relative", display: "block", width: 120, height: 68, borderRadius: 8, overflow: "hidden", textDecoration: "none" },
+  thumbImg: { width: "100%", height: "100%", objectFit: "cover", display: "block" },
+  playOverlay: { position: "absolute", inset: 0, background: "rgba(0,0,0,0.25)", display: "flex", alignItems: "center", justifyContent: "center" },
+  playBtn: { width: 34, height: 34, background: "#1fe5ff", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", paddingLeft: 2 },
+  videoFallback: { width: 120, height: 68, background: "#333a4d", border: "1px solid #3d4560", borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textDecoration: "none", color: "#1fe5ff" },
+  noVideo: { width: 120, height: 68, background: "#1e2232", border: "1px dashed #3d4560", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" },
   exName: { color: "#fff", fontWeight: 800, fontSize: 15 },
   exCat: { color: "#1fe5ff", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginTop: 1 },
-  thumbWrapFull: { position: "relative", display: "block", width: "100%", height: 180, borderRadius: 10, overflow: "hidden", textDecoration: "none", marginBottom: 10 },
-  thumbImgFull: { width: "100%", height: "100%", objectFit: "cover", display: "block" },
-  videoFallbackFull: { width: "100%", height: 100, background: "#333a4d", border: "1px solid #3d4560", borderRadius: 10, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textDecoration: "none", color: "#1fe5ff", marginBottom: 10 },
-  playOverlay: { position: "absolute", inset: 0, background: "rgba(0,0,0,0.3)", display: "flex", alignItems: "center", justifyContent: "center" },
-  playBtn: { width: 44, height: 44, background: "#1fe5ff", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", color: "#2a2e3c", fontWeight: 900, fontSize: 16, paddingLeft: 3 },
-  statBox: { background: "#333a4d", border: "1px solid #3d4560", borderRadius: 10, padding: "8px 12px", textAlign: "center", flex: 1 },
-  statValue: { color: "#1fe5ff", fontWeight: 900, fontSize: 18, lineHeight: 1 },
-  statLabel: { color: "#c0c0c0", fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginTop: 3 },
-  lastLog: { background: "#333a4d", color: "#1fe5ff", borderRadius: 6, fontSize: 11, padding: "4px 10px", display: "inline-block", marginTop: 6, marginBottom: 4 },
-  coachNote: { background: "#1a2535", border: "1px solid #1fe5ff33", borderRadius: 10, padding: "10px 12px", marginTop: 6, marginBottom: 6, display: "flex", flexDirection: "column", gap: 4 },
+  statBox: { background: "#333a4d", border: "1px solid #3d4560", borderRadius: 8, padding: "6px 10px", textAlign: "center", minWidth: 48 },
+  statValue: { color: "#1fe5ff", fontWeight: 900, fontSize: 16, lineHeight: 1 },
+  statLabel: { color: "#c0c0c0", fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginTop: 2 },
+  lastLog: { background: "#333a4d", color: "#1fe5ff", borderRadius: 6, fontSize: 11, padding: "3px 8px", display: "inline-block", marginTop: 8 },
+  coachNote: { background: "#1a2535", border: "1px solid #1fe5ff33", borderRadius: 8, padding: "8px 12px", marginTop: 8, display: "flex", flexDirection: "column", gap: 4 },
   coachNoteLabel: { color: "#1fe5ff", fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 },
-  doneBtn: { background: "#1fe5ff", color: "#2a2e3c", border: "none", borderRadius: 8, padding: "8px 14px", fontWeight: 800, fontSize: 13, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 },
-  timerBar: { background: "#1a2535", borderRadius: 12, padding: "14px 16px", margin: "6px 0 8px", border: "1px solid #1fe5ff33" },
-  timerTrack: { background: "#2a2e3c", borderRadius: 99, height: 8, overflow: "hidden" },
+  setRow: { display: "flex", alignItems: "center", gap: 8, borderBottom: "1px solid #2a2e3c", transition: "all 0.2s ease" },
+  setLabel: { fontSize: 12, fontWeight: 700, width: 48, flexShrink: 0, transition: "color 0.2s" },
+  setTarget: { color: "#fff", fontSize: 12, width: 40, flexShrink: 0 },
+  setLast: { color: "#a0a0a0", fontSize: 10, flex: 1 },
+  setInputWrap: { display: "flex", alignItems: "center", gap: 4, marginLeft: "auto" },
+  setInput: { background: "#333a4d", border: "2px solid #3d4560", borderRadius: 8, color: "#fff", padding: "8px", fontSize: 17, fontWeight: 800, width: 60, textAlign: "center", outline: "none", transition: "border-color 0.2s" },
+  setUnit: { color: "#a0a0a0", fontSize: 10 },
+  doneBtn: { background: "#1fe5ff", color: "#2a2e3c", border: "none", borderRadius: 8, padding: "7px 12px", fontWeight: 800, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" },
+  timerBar: { background: "#1a2535", borderRadius: 10, padding: "12px 14px", margin: "6px 0 8px", border: "1px solid #1fe5ff33" },
+  timerTrack: { background: "#2a2e3c", borderRadius: 99, height: 7, overflow: "hidden" },
   timerFill: { background: "#1fe5ff", height: "100%", borderRadius: 99, transition: "width 1s linear" },
-  skipBtn: { background: "transparent", color: "#a0a0a0", border: "1px solid #3d4560", borderRadius: 8, padding: "6px 12px", fontSize: 13, cursor: "pointer" },
+  skipBtn: { background: "transparent", color: "#a0a0a0", border: "1px solid #3d4560", borderRadius: 6, padding: "4px 10px", fontSize: 12, cursor: "pointer" },
   dayDoneCard: { background: "#1a3020", border: "1px solid #4ade80", borderRadius: 14, padding: 16, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" },
-  nextDayBtn: { background: "#4ade80", color: "#111", border: "none", borderRadius: 10, padding: "12px 20px", fontWeight: 800, cursor: "pointer", fontSize: 15, marginLeft: "auto" },
-  completeDayBtn: { background: "#1fe5ff", color: "#2a2e3c", border: "none", borderRadius: 14, padding: "18px 20px", fontWeight: 900, cursor: "pointer", fontSize: 17, width: "100%" },
-  popupBg: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.92)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 },
-  popupBox: { background: "#232736", borderRadius: 14, padding: 16, width: "100%", maxWidth: 560, border: "1px solid #3d4560" },
-  popupClose: { background: "#363d52", color: "#fff", border: "none", borderRadius: 6, width: 32, height: 32, cursor: "pointer", fontSize: 16, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" },
-  popupPlayer: { position: "relative", width: "100%", paddingTop: "56.25%", borderRadius: 8, overflow: "hidden" },
+  nextDayBtn: { background: "#4ade80", color: "#111", border: "none", borderRadius: 10, padding: "10px 20px", fontWeight: 800, cursor: "pointer", fontSize: 14, marginLeft: "auto" },
+  completeDayBtn: { background: "#1fe5ff", color: "#2a2e3c", border: "none", borderRadius: 12, padding: "16px 20px", fontWeight: 900, cursor: "pointer", fontSize: 16, width: "100%" },
   setBadge: { background: "#333a4d", color: "#fff", borderRadius: 6, fontSize: 11, padding: "4px 10px", display: "inline-block" },
 };
