@@ -77,6 +77,7 @@ export default function ClientApp() {
   const [notification, setNotification] = useState("");
   const [logs, setLogs] = useState([]);
   const [activeSetKey, setActiveSetKey] = useState(null);
+  const [liveWeights, setLiveWeights] = useState({});
 
   const notify = (msg) => { setNotification(msg); setTimeout(() => setNotification(""), 3000); };
   const isRTL = lang === "ar";
@@ -123,11 +124,12 @@ export default function ClientApp() {
     setRestTimer({ key, total: seconds, remaining, intervalId });
   };
 
-  const saveRep = async (exItem, gi, si, newVal, newReps) => {
+  const saveRep = async (exItem, gi, si, newVal, newReps, weights) => {
     const numSets = parseInt(exItem.sets) || 1;
+    const w = weights || liveWeights;
     const sets = Array.from({ length: numSets }).map((_, idx) => ({
       reps: idx === si ? newVal : (newReps[`${exItem.id}-${gi}-${idx}`] || ""),
-      weight: ""
+      weight: w[`${exItem.id}-${gi}-${idx}`] || ""
     }));
     const today = new Date().toLocaleDateString();
     const existing = logs.find(l => l.exercise_id === exItem.id && l.global_day_index === gi && l.log_date === today);
@@ -167,6 +169,7 @@ export default function ClientApp() {
     await sb.from("clients").update({ current_day_index: newIdx }).eq("id", client.id);
     setClient(prev => ({ ...prev, current_day_index: newIdx }));
     setLiveReps({});
+    setLiveWeights({});
     setCompletedSets({});
     setActiveSetKey(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -305,10 +308,12 @@ export default function ClientApp() {
                       ) : null}
                     </div>
 
-                    {/* Stat boxes below video */}
-                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 6 }}>
+                    {/* Stat boxes below video - centered */}
+                    <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginBottom: 8, marginTop: 4 }}>
                       {exItem.sets && <div style={cs.statBox}><div style={cs.statValue}>{exItem.sets}</div><div style={cs.statLabel}>{t("sets", lang)}</div></div>}
                       {exItem.reps && <div style={cs.statBox}><div style={cs.statValue}>{exItem.reps}</div><div style={cs.statLabel}>{t("reps", lang)}</div></div>}
+                      {exItem.weight && <div style={{ ...cs.statBox, borderColor: "#1fe5ff55" }}><div style={cs.statValue}>{exItem.weight}</div><div style={cs.statLabel}>{lang === "ar" ? "وزن" : "kg"}</div></div>}
+                      {exItem.hold && <div style={{ ...cs.statBox, borderColor: "#a78bfa55" }}><div style={{ ...cs.statValue, color: "#a78bfa" }}>{exItem.hold}s</div><div style={cs.statLabel}>{lang === "ar" ? "ثبات" : "Hold"}</div></div>}
                       {exItem.rest && <div style={cs.statBox}><div style={cs.statValue}>{exItem.rest}s</div><div style={cs.statLabel}>{t("rest", lang)}</div></div>}
                     </div>
 
@@ -320,7 +325,7 @@ export default function ClientApp() {
                       </div>
                     )}
                     {exLogs.length > 0 && (
-                      <div style={cs.lastLog}>{t("lastSession", lang)}: {exLogs[0].sets?.map(s => `${s.reps} reps`).join(" | ")}</div>
+                      <div style={cs.lastLog}>{t("lastSession", lang)}: {exLogs[0].sets?.map(s => `${s.reps} reps${s.weight ? ` @ ${s.weight}kg` : ''}`).join(" | ")}</div>
                     )}
 
                     {/* Sets */}
@@ -359,10 +364,25 @@ export default function ClientApp() {
                                       const newVal = e.target.value;
                                       const newReps = { ...liveReps, [key]: newVal };
                                       setLiveReps(newReps);
-                                      saveRep(exItem, gi, si, newVal, newReps);
+                                      saveRep(exItem, gi, si, newVal, newReps, liveWeights);
                                     }}
                                   />
                                   <span style={cs.setUnit}>{t("reps", lang)}</span>
+                                  {exItem.weight && (<>
+                                  <input
+                                    style={{ ...cs.setInput, width: 52, borderColor: "#3d4560", marginLeft: 4 }}
+                                    type="number" min="0" placeholder="kg"
+                                    value={liveWeights[key] !== undefined ? liveWeights[key] : ""}
+                                    onFocus={() => setActiveSetKey(key)}
+                                    onChange={e => {
+                                      const newWeight = e.target.value;
+                                      const newWeights = { ...liveWeights, [key]: newWeight };
+                                      setLiveWeights(newWeights);
+                                      saveRep(exItem, gi, si, val, liveReps, newWeights);
+                                    }}
+                                  />
+                                  <span style={cs.setUnit}>kg</span>
+                                  </>)}
                                 </div>
                                 {saved && !isTimerActive && !isCompleted && (
                                   <button style={cs.doneBtn} onClick={() => {
