@@ -207,17 +207,25 @@ export default function ClientApp() {
           <div style={cs.popupBox} onClick={e => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
               <span style={{ color: "#1fe5ff", fontWeight: 700, fontSize: 14 }}>{videoPopup.name}</span>
-              <button style={cs.popupClose} onClick={() => setVideoPopup(null)}>✕</button>
+              <button style={cs.popupClose} onClick={() => setVideoPopup(null)}>✕ Close</button>
             </div>
             <div style={cs.popupPlayer}>
               <iframe
-                src={`https://www.youtube.com/embed/${videoPopup.id}?autoplay=1&rel=0`}
+                src={`https://www.youtube-nocookie.com/embed/${videoPopup.id}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
                 style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none", borderRadius: 8 }}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                 allowFullScreen
                 title={videoPopup.name}
               />
             </div>
+            <a 
+              href={`https://www.youtube.com/watch?v=${videoPopup.id}`}
+              target="_blank" 
+              rel="noreferrer"
+              style={{ display: "block", textAlign: "center", color: "#a0a0a0", fontSize: 12, marginTop: 10, textDecoration: "none" }}
+            >
+              {lang === "ar" ? "فتح في يوتيوب ↗" : "Open in YouTube ↗"}
+            </a>
           </div>
         </div>
       )}
