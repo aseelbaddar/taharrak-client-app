@@ -288,32 +288,28 @@ export default function ClientApp() {
                       </div>
                     </div>
 
-                    {/* Video + stats */}
-                    <div style={cs.exMediaRow}>
-                      <div style={cs.videoCol}>
-                        {thumbUrl ? (
-                          <a href={ex.video_url} target="_blank" rel="noreferrer" style={cs.thumbWrap}>
-                            <img src={thumbUrl} alt={ex.name} style={cs.thumbImg} />
-                            <div style={cs.playOverlay}>
-                              <div style={cs.playBtn}><PlayIcon /></div>
-                            </div>
-                          </a>
-                        ) : ex.video_url ? (
-                          <a href={ex.video_url} target="_blank" rel="noreferrer" style={cs.videoFallback}>
+                    {/* Video full width */}
+                    <div style={{ marginBottom: 10 }}>
+                      {thumbUrl ? (
+                        <a href={ex.video_url} target="_blank" rel="noreferrer" style={cs.thumbWrapFull}>
+                          <img src={thumbUrl} alt={ex.name} style={cs.thumbImgFull} />
+                          <div style={cs.playOverlay}>
                             <div style={cs.playBtn}><PlayIcon /></div>
-                            <span style={{ fontSize: 10, color: "#e0e0e0", marginTop: 4 }}>{t("watchVideo", lang)}</span>
-                          </a>
-                        ) : (
-                          <div style={cs.noVideo}><span style={{ color: "#555", fontSize: 10 }}>{t("noVideo", lang)}</span></div>
-                        )}
-                      </div>
+                          </div>
+                        </a>
+                      ) : ex.video_url ? (
+                        <a href={ex.video_url} target="_blank" rel="noreferrer" style={cs.videoFallbackFull}>
+                          <div style={cs.playBtn}><PlayIcon /></div>
+                          <span style={{ fontSize: 11, color: "#e0e0e0", marginTop: 4 }}>{t("watchVideo", lang)}</span>
+                        </a>
+                      ) : null}
+                    </div>
 
-                      {/* Stat boxes */}
-                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-start" }}>
-                        {exItem.sets && <div style={cs.statBox}><div style={cs.statValue}>{exItem.sets}</div><div style={cs.statLabel}>{t("sets", lang)}</div></div>}
-                        {exItem.reps && <div style={cs.statBox}><div style={cs.statValue}>{exItem.reps}</div><div style={cs.statLabel}>{t("reps", lang)}</div></div>}
-                        {exItem.rest && <div style={cs.statBox}><div style={cs.statValue}>{exItem.rest}s</div><div style={cs.statLabel}>{t("rest", lang)}</div></div>}
-                      </div>
+                    {/* Stat boxes below video */}
+                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 6 }}>
+                      {exItem.sets && <div style={cs.statBox}><div style={cs.statValue}>{exItem.sets}</div><div style={cs.statLabel}>{t("sets", lang)}</div></div>}
+                      {exItem.reps && <div style={cs.statBox}><div style={cs.statValue}>{exItem.reps}</div><div style={cs.statLabel}>{t("reps", lang)}</div></div>}
+                      {exItem.rest && <div style={cs.statBox}><div style={cs.statValue}>{exItem.rest}s</div><div style={cs.statLabel}>{t("rest", lang)}</div></div>}
                     </div>
 
                     {ex.description && <div style={{ color: "#c0c0c0", fontSize: 12, marginTop: 8 }}>{ex.description}</div>}
@@ -483,6 +479,9 @@ const cs = {
   exIndex: { width: 28, height: 28, minWidth: 28, background: "#1fe5ff", color: "#2a2e3c", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: 13 },
   exMediaRow: { display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 4 },
   videoCol: { flexShrink: 0 },
+  thumbWrapFull: { position: "relative", display: "block", width: "100%", borderRadius: 10, overflow: "hidden", textDecoration: "none", aspectRatio: "16/9" },
+  thumbImgFull: { width: "100%", height: "100%", objectFit: "cover", display: "block" },
+  videoFallbackFull: { width: "100%", aspectRatio: "16/9", background: "#333a4d", border: "1px solid #3d4560", borderRadius: 10, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textDecoration: "none", color: "#1fe5ff" },
   thumbWrap: { position: "relative", display: "block", width: 120, height: 68, borderRadius: 8, overflow: "hidden", textDecoration: "none" },
   thumbImg: { width: "100%", height: "100%", objectFit: "cover", display: "block" },
   playOverlay: { position: "absolute", inset: 0, background: "rgba(0,0,0,0.25)", display: "flex", alignItems: "center", justifyContent: "center" },
