@@ -201,6 +201,27 @@ export default function ClientApp() {
     <div style={{ ...cs.root, direction: isRTL ? "rtl" : "ltr" }}>
       {notification && <div style={cs.notification}>{notification}</div>}
 
+      {/* Video Popup */}
+      {videoPopup && (
+        <div style={cs.popupBg} onClick={() => setVideoPopup(null)}>
+          <div style={cs.popupBox} onClick={e => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <span style={{ color: "#1fe5ff", fontWeight: 700, fontSize: 14 }}>{videoPopup.name}</span>
+              <button style={cs.popupClose} onClick={() => setVideoPopup(null)}>✕</button>
+            </div>
+            <div style={cs.popupPlayer}>
+              <iframe
+                src={`https://www.youtube.com/embed/${videoPopup.id}?autoplay=1&rel=0`}
+                style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none", borderRadius: 8 }}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                title={videoPopup.name}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div style={cs.header}>
         <div>
@@ -280,15 +301,15 @@ export default function ClientApp() {
 
                     {/* Video full width on mobile */}
                     {thumbUrl ? (
-                      <a href={ex.video_url} target="_blank" rel="noreferrer" style={cs.thumbWrapFull}>
+                      <button style={{ ...cs.thumbWrapFull, border: "none", cursor: "pointer", padding: 0 }} onClick={() => setVideoPopup({ id: videoId, name: ex.name })}>
                         <img src={thumbUrl} alt={ex.name} style={cs.thumbImgFull} />
                         <div style={cs.playOverlay}><div style={cs.playBtn}>&#9654;</div></div>
-                      </a>
+                      </button>
                     ) : ex.video_url ? (
-                      <a href={ex.video_url} target="_blank" rel="noreferrer" style={cs.videoFallbackFull}>
+                      <button style={{ ...cs.videoFallbackFull, border: "1px solid #3d4560", cursor: "pointer" }} onClick={() => setVideoPopup({ id: videoId, name: ex.name })}>
                         <span style={{ fontSize: 22 }}>&#9654;</span>
                         <span style={{ fontSize: 11, color: "#e0e0e0", marginTop: 3 }}>{t("watchVideo", lang)}</span>
-                      </a>
+                      </button>
                     ) : null}
 
                     {/* Stat boxes */}
@@ -510,5 +531,9 @@ const cs = {
   dayDoneCard: { background: "#1a3020", border: "1px solid #4ade80", borderRadius: 14, padding: 16, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" },
   nextDayBtn: { background: "#4ade80", color: "#111", border: "none", borderRadius: 10, padding: "12px 20px", fontWeight: 800, cursor: "pointer", fontSize: 15, marginLeft: "auto" },
   completeDayBtn: { background: "#1fe5ff", color: "#2a2e3c", border: "none", borderRadius: 14, padding: "18px 20px", fontWeight: 900, cursor: "pointer", fontSize: 17, width: "100%" },
+  popupBg: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.92)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 },
+  popupBox: { background: "#232736", borderRadius: 14, padding: 16, width: "100%", maxWidth: 560, border: "1px solid #3d4560" },
+  popupClose: { background: "#363d52", color: "#fff", border: "none", borderRadius: 6, width: 32, height: 32, cursor: "pointer", fontSize: 16, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" },
+  popupPlayer: { position: "relative", width: "100%", paddingTop: "56.25%", borderRadius: 8, overflow: "hidden" },
   setBadge: { background: "#333a4d", color: "#fff", borderRadius: 6, fontSize: 11, padding: "4px 10px", display: "inline-block" },
 };
