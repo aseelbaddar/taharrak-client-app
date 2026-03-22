@@ -309,15 +309,25 @@ export default function ClientApp() {
 
                     {/* Video full width on mobile */}
                     {thumbUrl ? (
-                      <button style={{ ...cs.thumbWrapFull, border: "none", cursor: "pointer", padding: 0 }} onClick={() => setVideoPopup({ id: videoId, name: ex.name })}>
+                      <a href={ex.video_url} target="_blank" rel="noreferrer" style={cs.thumbWrapFull}>
                         <img src={thumbUrl} alt={ex.name} style={cs.thumbImgFull} />
-                        <div style={cs.playOverlay}><div style={cs.playBtn}>&#9654;</div></div>
-                      </button>
+                        <div style={cs.playOverlay}>
+                          <div style={cs.playBtn}>
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                              <polygon points="3,1 13,7 3,13" fill="#2a2e3c"/>
+                            </svg>
+                          </div>
+                        </div>
+                      </a>
                     ) : ex.video_url ? (
-                      <button style={{ ...cs.videoFallbackFull, border: "1px solid #3d4560", cursor: "pointer" }} onClick={() => setVideoPopup({ id: videoId, name: ex.name })}>
-                        <span style={{ fontSize: 22 }}>&#9654;</span>
-                        <span style={{ fontSize: 11, color: "#e0e0e0", marginTop: 3 }}>{t("watchVideo", lang)}</span>
-                      </button>
+                      <a href={ex.video_url} target="_blank" rel="noreferrer" style={cs.videoFallbackFull}>
+                        <div style={cs.playBtn}>
+                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <polygon points="3,1 13,7 3,13" fill="#2a2e3c"/>
+                          </svg>
+                        </div>
+                        <span style={{ fontSize: 10, color: "#e0e0e0", marginTop: 4 }}>{t("watchVideo", lang)}</span>
+                      </a>
                     ) : null}
 
                     {/* Stat boxes */}
