@@ -70,6 +70,7 @@ export default function ClientApp() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [activeTab, setActiveTab] = useState("program");
   const [liveReps, setLiveReps] = useState({});
   const [completedSets, setCompletedSets] = useState({});
@@ -81,6 +82,17 @@ export default function ClientApp() {
 
   const notify = (msg) => { setNotification(msg); setTimeout(() => setNotification(""), 3000); };
   const isRTL = lang === "ar";
+
+  // Auto-login if remembered
+  useEffect(() => {
+    const saved = localStorage.getItem("taharrak_client");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setClient(parsed);
+      } catch {}
+    }
+  }, []);
 
   useEffect(() => { if (client?.assigned_program) loadProgram(client.assigned_program); }, [client]);
   useEffect(() => { if (client) loadLogs(); }, [client]);
@@ -103,8 +115,17 @@ export default function ClientApp() {
 
   const login = async () => {
     const { data } = await sb.from("clients").select("*").eq("username", username).eq("password", password).single();
-    if (data) { setClient(data); setLoginError(""); }
-    else setLoginError(t("invalidCreds", lang));
+    if (data) {
+      setClient(data);
+      setLoginError("");
+      if (rememberMe) {
+        localStorage.setItem("taharrak_client", JSON.stringify(data));
+      } else {
+        localStorage.removeItem("taharrak_client");
+      }
+    } else {
+      setLoginError(t("invalidCreds", lang));
+    }
   };
 
   const startRestTimer = (key, seconds) => {
@@ -195,6 +216,18 @@ export default function ClientApp() {
             <input style={cs.input} type="password" placeholder={t("password", lang)} value={password} onChange={e => setPassword(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter") login(); }} />
             {loginError && <p style={cs.error}>{loginError}</p>}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "8px 0" }}>
+              <input
+                type="checkbox"
+                id="rememberMe"
+                checked={rememberMe}
+                onChange={e => setRememberMe(e.target.checked)}
+                style={{ width: 18, height: 18, accentColor: "#1fe5ff", cursor: "pointer" }}
+              />
+              <label htmlFor="rememberMe" style={{ color: "#e0e0e0", fontSize: 14, cursor: "pointer" }}>
+                {lang === "ar" ? "تذكرني" : "Remember me"}
+              </label>
+            </div>
             <button style={cs.btn} onClick={login}>{t("login", lang)}</button>
           </div>
         </div>
@@ -222,6 +255,7 @@ export default function ClientApp() {
           <button style={lang === "ar" ? cs.langActive : cs.langBtn} onClick={() => setLang("ar")}>ع</button>
           <button style={lang === "en" ? cs.langActive : cs.langBtn} onClick={() => setLang("en")}>EN</button>
           <button style={cs.logoutBtn} onClick={() => {
+            localStorage.removeItem("taharrak_client");
             setClient(null); setUsername(""); setPassword(""); setLiveReps({});
             setCompletedSets({}); setActiveSetKey(null);
             if (restTimer?.intervalId) clearInterval(restTimer.intervalId);
