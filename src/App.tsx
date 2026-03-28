@@ -27,7 +27,7 @@ const T = {
   password: { en: "Password", ar: "كلمة المرور" },
   invalidCreds: { en: "Invalid credentials", ar: "اسم المستخدم أو كلمة المرور غلط" },
   myProgram: { en: "My Program", ar: "برنامجي" },
-  myLogs: { en: "My Logs", ar: "سجلاتي" },
+  myLogs: { en: "History", ar: "السجل" },
   noProgram: { en: "No program assigned yet.\nYour coach will assign one soon 💪", ar: "ما في برنامج بعد.\nالمدرب بيضيف لك قريباً 💪" },
   programComplete: { en: "Program Complete! 🏆", ar: "انتهيت من البرنامج! 🏆" },
   week: { en: "Week", ar: "الأسبوع" },
@@ -471,28 +471,62 @@ export default function ClientApp() {
         </div>
       )}
 
-      {/* Logs Tab */}
+      {/* History Tab - grouped by day */}
       {activeTab === "log" && (
         <div style={cs.content}>
           <h2 style={cs.sectionTitle}>{t("myLogs", lang)}</h2>
-          {logs.length === 0 ? <div style={cs.empty}>{t("noLogs", lang)}</div> : (
-            logs.map((log, i) => {
-              const ex = exercises.find(e => e.id === log.exercise_id);
+          {logs.length === 0 ? <div style={cs.empty}>{t("noLogs", lang)}</div> : (() => {
+            // Group logs by date
+            const byDate = {};
+            logs.forEach(log => {
+              const date = log.log_date || "Unknown";
+              if (!byDate[date]) byDate[date] = [];
+              byDate[date].push(log);
+            });
+            const sortedDates = Object.keys(byDate).sort((a, b) => new Date(b) - new Date(a));
+            return sortedDates.map(date => {
+              const dayLogs = byDate[date];
+              // Get program/day info from first log
+              const firstLog = dayLogs[0];
+              const prog = program;
+              const flatDays = prog ? flattenDays(prog.weeks) : [];
+              const flatDay = flatDays.find(fd => fd.globalIndex === firstLog.global_day_index);
               return (
-                <div key={i} style={cs.card}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div style={cs.exName}>{ex?.name || "Exercise"}</div>
-                    <div style={{ color: "#a0a0a0", fontSize: 12 }}>{log.log_date}</div>
+                <div key={date} style={cs.historyDayCard}>
+                  {/* Day header */}
+                  <div style={cs.historyDayHeader}>
+                    <div>
+                      <div style={{ color: "#1fe5ff", fontWeight: 800, fontSize: 15 }}>{date}</div>
+                      {flatDay && (
+                        <div style={{ color: "#a0a0a0", fontSize: 12, marginTop: 2 }}>
+                          {flatDay.week.label} · {flatDay.day.label}
+                        </div>
+                      )}
+                    </div>
+                    <div style={cs.historyBadge}>{dayLogs.length} {lang === "ar" ? "تمرين" : "exercises"}</div>
                   </div>
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
-                    {log.sets?.map((set, si) => (
-                      <div key={si} style={cs.setBadge}>{t("set", lang)} {si + 1}: {set.reps} {t("reps", lang)}</div>
-                    ))}
-                  </div>
+                  {/* Exercises */}
+                  {dayLogs.map((log, i) => {
+                    const ex = exercises.find(e => e.id === log.exercise_id);
+                    return (
+                      <div key={i} style={cs.historyExRow}>
+                        <div style={cs.historyExName}>{ex?.name || "Exercise"}</div>
+                        <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginTop: 4 }}>
+                          {log.sets?.map((set, si) => (
+                            set.reps ? (
+                              <div key={si} style={cs.historySetBadge}>
+                                {t("set", lang)} {si + 1}: {set.reps} {t("reps", lang)}{set.weight ? ` @ ${set.weight}kg` : ""}
+                              </div>
+                            ) : null
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               );
-            })
-          )}
+            });
+          })()}
         </div>
       )}
     </div>
@@ -565,5 +599,11 @@ const cs = {
   dayDoneCard: { background: "#1a3020", border: "1px solid #4ade80", borderRadius: 14, padding: 16, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" },
   nextDayBtn: { background: "#4ade80", color: "#111", border: "none", borderRadius: 10, padding: "10px 20px", fontWeight: 800, cursor: "pointer", fontSize: 14, marginLeft: "auto" },
   completeDayBtn: { background: "#1fe5ff", color: "#2a2e3c", border: "none", borderRadius: 12, padding: "16px 20px", fontWeight: 900, cursor: "pointer", fontSize: 16, width: "100%" },
+  historyDayCard: { background: "#232736", border: "1px solid #363d52", borderRadius: 14, padding: 14, marginBottom: 14 },
+  historyDayHeader: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12, paddingBottom: 10, borderBottom: "1px solid #333a4d" },
+  historyBadge: { background: "#1fe5ff22", color: "#1fe5ff", border: "1px solid #1fe5ff44", borderRadius: 20, fontSize: 11, fontWeight: 700, padding: "3px 10px", whiteSpace: "nowrap" },
+  historyExRow: { paddingBottom: 10, marginBottom: 10, borderBottom: "1px solid #2a2e3c" },
+  historyExName: { color: "#fff", fontWeight: 700, fontSize: 13 },
+  historySetBadge: { background: "#333a4d", color: "#e0e0e0", borderRadius: 6, fontSize: 11, padding: "3px 8px", display: "inline-block" },
   setBadge: { background: "#333a4d", color: "#fff", borderRadius: 6, fontSize: 11, padding: "4px 10px", display: "inline-block" },
 };
