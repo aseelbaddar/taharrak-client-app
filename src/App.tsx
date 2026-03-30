@@ -196,6 +196,18 @@ export default function ClientApp() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const goPrevDay = async (currentIdx) => {
+    if (currentIdx <= 0) return;
+    const newIdx = currentIdx - 1;
+    await sb.from("clients").update({ current_day_index: newIdx }).eq("id", client.id);
+    setClient(prev => ({ ...prev, current_day_index: newIdx }));
+    setLiveReps({});
+    setLiveWeights({});
+    setCompletedSets({});
+    setActiveSetKey(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   // ── LOGIN ──
   if (!client) {
     return (
@@ -464,6 +476,12 @@ export default function ClientApp() {
                   ) : (
                     <button style={cs.completeDayBtn} onClick={() => markDayDone(currentFlatDay.globalIndex)}>{t("markDone", lang)}</button>
                   )}
+                  {/* Previous day button */}
+                  {currentIdx > 0 && (
+                    <button style={cs.prevDayBtn} onClick={() => goPrevDay(currentIdx)}>
+                      {lang === "ar" ? "← اليوم السابق" : "← Previous Day"}
+                    </button>
+                  )}
                 </div>
               )}
             </>
@@ -598,6 +616,7 @@ const cs = {
   skipBtn: { background: "transparent", color: "#a0a0a0", border: "1px solid #3d4560", borderRadius: 6, padding: "4px 10px", fontSize: 12, cursor: "pointer" },
   dayDoneCard: { background: "#1a3020", border: "1px solid #4ade80", borderRadius: 14, padding: 16, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" },
   nextDayBtn: { background: "#4ade80", color: "#111", border: "none", borderRadius: 10, padding: "10px 20px", fontWeight: 800, cursor: "pointer", fontSize: 14, marginLeft: "auto" },
+  prevDayBtn: { background: "transparent", color: "#a0a0a0", border: "1px solid #3d4560", borderRadius: 10, padding: "10px 20px", fontWeight: 600, cursor: "pointer", fontSize: 13, width: "100%", marginTop: 8 },
   completeDayBtn: { background: "#1fe5ff", color: "#2a2e3c", border: "none", borderRadius: 12, padding: "16px 20px", fontWeight: 900, cursor: "pointer", fontSize: 16, width: "100%" },
   historyDayCard: { background: "#232736", border: "1px solid #363d52", borderRadius: 14, padding: 14, marginBottom: 14 },
   historyDayHeader: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12, paddingBottom: 10, borderBottom: "1px solid #333a4d" },
